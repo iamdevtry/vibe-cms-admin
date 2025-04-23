@@ -1,11 +1,13 @@
-import NextAuth, { NextAuthOptions } from 'next-auth';
+import NextAuth, { AuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
+import FacebookProvider from 'next-auth/providers/facebook';
 import GithubProvider from 'next-auth/providers/github';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import prisma from '@/lib/prisma';
 import { compare } from 'bcryptjs';
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -18,22 +20,113 @@ export const authOptions: NextAuthOptions = {
         if (!credentials) return null;
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-          select: { id: true, name: true, email: true, hashedPassword: true },
         });
+
+        // Check if user exists and password is valid
         if (!user?.hashedPassword) return null;
         const isValid = await compare(credentials.password, user.hashedPassword);
         if (!isValid) return null;
-        return { id: user.id, name: user.name, email: user.email };
+
+        // Check if user is active
+        if (user.status !== 'ACTIVE') {
+          throw new Error('Your account is inactive or suspended. Please contact an administrator.');
+        }
+
+        // Update last login time
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLogin: new Date() },
+        });
+
+        // Return user data to be stored in the JWT token
+        return { 
+          id: user.id, 
+          name: user.displayName || user.username || user.email?.split('@')[0], 
+          email: user.email,
+          image: user.avatar,
+          role: user.roleId,
+          permissions: user.permissions,
+          status: user.status
+        };
+      },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+          firstName: profile.given_name,
+          lastName: profile.family_name,
+          displayName: profile.name,
+          status: 'ACTIVE',
+        };
+      },
+    }),
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_CLIENT_ID!,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture.data.url,
+          firstName: profile.first_name,
+          lastName: profile.last_name,
+          displayName: profile.name,
+          status: 'ACTIVE',
+        };
       },
     }),
     GithubProvider({
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
+      profile(profile) {
+        return {
+          id: profile.id.toString(),
+          name: profile.name || profile.login,
+          email: profile.email,
+          image: profile.avatar_url,
+          username: profile.login,
+          displayName: profile.name || profile.login,
+          status: 'ACTIVE',
+        };
+      },
     }),
   ],
+  callbacks: {
+    async jwt({ token, user, account, profile }) {
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+        token.permissions = user.permissions;
+        token.status = user.status;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        session.user.permissions = token.permissions as string[];
+        session.user.status = token.status as string;
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: '/login',
+    signOut: '/logout',
+    error: '/login',
+    newUser: '/profile'
+  },
+  session: { strategy: 'jwt' },
   secret: process.env.NEXTAUTH_SECRET!,
-  session: { strategy: 'database' },
-  pages: { signIn: '/login' },
+  debug: process.env.NODE_ENV === 'development',
 };
 
 const handler = NextAuth(authOptions);

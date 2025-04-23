@@ -8,7 +8,7 @@ async function main() {
   await prisma.user.create({
     data: {
       email: "me@devtry.net",
-      name: "Devtry",
+      username: "Devtry",
       hashedPassword: hashedPassword,
     },
   });
