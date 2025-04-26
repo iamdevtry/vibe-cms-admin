@@ -55,10 +55,18 @@ export default function Sidebar() {
         </li>
         <li>
           <Link 
-            href="/content" 
-            className={`block py-2 px-4 rounded transition-colors ${isActive('/content') ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+            href="/contents" 
+            className={`block py-2 px-4 rounded transition-colors ${isActive('/contents') ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
           >
-            Content
+            Contents
+          </Link>
+        </li>
+        <li>
+          <Link 
+            href="/content-types" 
+            className={`block py-2 px-4 rounded transition-colors ${isActive('/content-types') ? 'bg-green-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}
+          >
+            Content Types
           </Link>
         </li>
         <li>

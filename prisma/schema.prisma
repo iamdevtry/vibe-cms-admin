@@ -13,6 +13,12 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
   id                 String       @id @map("_id") @default(auto()) @db.ObjectId
   username           String?      @unique
@@ -41,6 +47,11 @@ model User {
   updatedUsers       User[]       @relation("UpdatedUsers")
   createdRoles       Role[]       @relation("CreatedRoles")
   updatedRoles       Role[]       @relation("UpdatedRoles")
+  authoredContents   Content[]    @relation("ContentAuthor")
+  createdContents    Content[]    @relation("ContentCreatedBy")
+  updatedContents    Content[]    @relation("ContentUpdatedBy")
+  createdContentTypes ContentType[] @relation("ContentTypeCreatedBy")
+  updatedContentTypes ContentType[] @relation("ContentTypeUpdatedBy")
 }
 
 model Role {
@@ -56,6 +67,50 @@ model Role {
   updatedById        String?      @db.ObjectId
   updatedBy          User?        @relation("UpdatedRoles", fields: [updatedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users              User[]
+}
+
+model ContentType {
+  id                 String       @id @map("_id") @default(auto()) @db.ObjectId
+  name               String
+  slug               String       @unique
+  description        String?
+  fields             Json         // Array of field definitions
+  isSystem           Boolean      @default(false)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  createdById        String?      @db.ObjectId
+  createdBy          User?        @relation("ContentTypeCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedById        String?      @db.ObjectId
+  updatedBy          User?        @relation("ContentTypeUpdatedBy", fields: [updatedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  contents           Content[]    @relation("ContentType")
+
+  @@map("content_types")
+}
+
+model Content {
+  id                 String       @id @map("_id") @default(auto()) @db.ObjectId
+  title              String
+  slug               String
+  contentTypeId      String       @db.ObjectId
+  contentType        ContentType  @relation("ContentType", fields: [contentTypeId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  status             ContentStatus @default(DRAFT)
+  publishedAt        DateTime?
+  content            String?      // JSON/HTML content
+  excerpt            String?
+  customFields       Json?        // For storing custom field values
+  seo                Json?        // For storing SEO metadata
+  authorId           String?      @db.ObjectId
+  author             User?        @relation("ContentAuthor", fields: [authorId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  revisions          Json?        // Array of revision objects
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  createdById        String?      @db.ObjectId
+  createdBy          User?        @relation("ContentCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedById        String?      @db.ObjectId
+  updatedBy          User?        @relation("ContentUpdatedBy", fields: [updatedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([contentTypeId, slug])
+  @@map("contents")
 }
 
 model Account {
