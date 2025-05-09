@@ -54,6 +54,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { FieldDefinition, FieldType } from "@/types/content.types";
 
 // Form schema for content creation
+// Define specific form schema type to ensure status is required
+type ContentFormValues = z.infer<typeof contentSchema>;
+
 const formSchema = contentSchema;
 
 export default function CreateContentPage() {
@@ -65,13 +68,19 @@ export default function CreateContentPage() {
   const [selectedContentType, setSelectedContentType] = useState<ContentType | null>(null);
   const [contentTypeFields, setContentTypeFields] = useState<FieldDefinition[]>([]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  // Define form type with explicit required status
+  type ContentFormValues = z.infer<typeof formSchema> & {
+    status: ContentStatus; // Make status explicitly required
+    [key: string]: any; // Allow dynamic field names for custom fields
+  };
+
+  const form = useForm<ContentFormValues>({
+    resolver: zodResolver(formSchema) as any, // Use type assertion to bypass resolver type issues
     defaultValues: {
       title: "",
       slug: "",
       contentTypeId: "",
-      status: "DRAFT" as ContentStatus,
+      status: ContentStatus.DRAFT,
       content: "",
       excerpt: "",
       customFields: {},

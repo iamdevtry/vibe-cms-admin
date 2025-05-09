@@ -51,8 +51,13 @@ export default function CreateContentTypePage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  // Define form type with support for dynamic fields
+  type ContentTypeFormValues = z.infer<typeof formSchema> & {
+    [key: string]: any; // Allow dynamic field names
+  };
+
+  const form = useForm<ContentTypeFormValues>({
+    resolver: zodResolver(formSchema) as any, // Use type assertion to bypass resolver type issues
     defaultValues: {
       name: "",
       slug: "",

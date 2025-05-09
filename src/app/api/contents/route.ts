@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!hasPermission(session, "content:read")) {
+    if (!hasPermission(session.user.permissions || [], "content:read")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!hasPermission(session, "content:create")) {
+    if (!hasPermission(session.user.permissions || [], "content:create")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

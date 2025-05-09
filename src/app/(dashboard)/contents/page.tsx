@@ -101,8 +101,8 @@ export default function ContentsPage() {
         page,
         limit,
         search: search || undefined,
-        contentTypeId: selectedContentType || undefined,
-        status: selectedStatus || undefined,
+        contentTypeId: selectedContentType === 'all' ? undefined : selectedContentType,
+        status: selectedStatus === 'all' ? undefined : selectedStatus,
       });
       setContents(result.data);
       setTotalPages(result.pagination.totalPages);
@@ -220,7 +220,7 @@ export default function ContentsPage() {
               <SelectValue placeholder="All Content Types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Content Types</SelectItem>
+              <SelectItem value="all">All Content Types</SelectItem>
               {contentTypes.map((type) => (
                 <SelectItem key={type.id} value={type.id}>
                   {type.name}
@@ -237,7 +237,7 @@ export default function ContentsPage() {
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="PUBLISHED">Published</SelectItem>
               <SelectItem value="DRAFT">Draft</SelectItem>
               <SelectItem value="ARCHIVED">Archived</SelectItem>
@@ -329,7 +329,7 @@ export default function ContentsPage() {
         </Table>
       </div>
 
-      {totalPages > 1 && (
+      {/* {totalPages > 1 && (
         <Pagination>
           <PaginationContent>
             <PaginationItem>
@@ -356,7 +356,7 @@ export default function ContentsPage() {
             </PaginationItem>
           </PaginationContent>
         </Pagination>
-      )}
+      )} */}
     </div>
   );
 }
