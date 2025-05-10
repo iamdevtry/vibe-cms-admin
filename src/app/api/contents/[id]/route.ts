@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!hasPermission(session, "content:read")) {
+    if (!hasPermission(session.user.permissions || [], "content:read")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -80,7 +80,7 @@ export async function PATCH(
     }
 
     // Check for permission
-    if (!hasPermission(session, "content:update")) {
+    if (!hasPermission(session.user.permissions || [], "content:update")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -184,7 +184,7 @@ export async function PATCH(
         ...(customFields !== undefined && { customFields }),
         ...(seo !== undefined && { seo }),
         ...(authorId && { authorId }),
-        ...(revisions.length > 0 && { revisions }),
+        ...(Array.isArray(revisions) && revisions.length > 0 && { revisions }),
         updatedById: session.user.id,
       },
       include: {
@@ -222,7 +222,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!hasPermission(session, "content:delete")) {
+    if (!hasPermission(session.user.permissions || [], "content:delete")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
